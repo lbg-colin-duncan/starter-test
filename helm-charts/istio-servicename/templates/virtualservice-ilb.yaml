@@ -1,0 +1,14 @@
+{{- if .Values.virtualserviceIlb.enabled -}}
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: {{ include "virtualservice.name" . }}-ilb
+  namespace: {{ .Release.Namespace }}
+spec:
+  hosts:
+  - {{ .Values.virtualserviceIlb.hosts }}
+  gateways:
+  - {{ .Values.virtualserviceIlb.gateways }}
+  http:
+{{ toYaml .Values.vsroutes | indent 4 }}
+{{- end }}

@@ -1,0 +1,94 @@
+virtualservice:
+  #  e.g hosts: api.ew2.bld-02.ep.gcp.oncp.cloud
+  hosts: <hostname for candidate service>
+
+retry:
+  enabled: true
+
+circuit:
+  enabled: true
+
+vsroutes:
+  - match:
+      - uri:
+          prefix: /<service-name>/v2.0/beta/
+    rewrite:
+      uri: /<service-name>/v2.0/
+    route:
+      - destination:
+          host: <host-url>
+          subset: v2d1
+        weight: 0
+      - destination:
+          host: <host-url>
+          subset: v2d2
+        weight: 100
+
+  - match:
+      - headers:
+          Referer:
+            regex: ^.*beta.*$
+        uri:
+          prefix: /<service-name>/v2.0
+    route:
+      - destination:
+          host: <host-url>
+          subset: v2d1
+        weight: 0
+      - destination:
+          host: <host-url>
+          subset: v2d2
+        weight: 100
+  - match:
+      - headers:
+          X-Forwarded-Host:
+            regex: ^.*beta.*$
+        uri:
+          prefix: /<service-name>/v2.0
+    route:
+      - destination:
+          host: <host-url>
+          subset: v2d1
+        weight: 0
+      - destination:
+          host: <host-url>
+          subset: v2d2
+        weight: 100
+  - match:
+      - uri:
+          prefix: /<service-name>/v2.0
+    route:
+      - destination:
+          host: <host-url>
+          subset: v2d1
+        weight: 100
+      - destination:
+          host: <host-url>
+          subset: v2d2
+        weight: 0
+  - route:
+      - destination:
+          host: <host-url>
+    retries:
+      attempts: 3
+      perTryTimeout: 30s
+      retryOn: connect-failure,retriable-status-codes,reset,gateway-error
+
+
+drsubsets:
+  - name: v2d1
+    labels:
+      version: v2d1
+  - name: v2d2
+    labels:
+      version: v2d2
+
+jwt_validation:
+  apply: true
+  allow_all: false
+  matcher:
+    - label: "app.kubernetes.io/name: <service-name>-v2"
+  jwksUri: "<JWKS-URI>"
+  iss: forgerock
+  exclude_urls:
+    - path: "/<service-name>/v2.0/health"

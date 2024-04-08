@@ -1,0 +1,27 @@
+pluginManagement {
+    repositories {
+        maven {
+            url 'https://nexus.mgmt-bld.oncp.dev/repository/maven-public/'
+        }
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        maven {
+            url 'https://nexus.mgmt-bld.oncp.dev/repository/maven-public/'
+        }
+        maven {
+            url 'https://nexus.sbs-bld.oncp.dev/repository/shared-services/'
+        }
+    }
+    versionCatalogs {
+        libs {
+
+            from("com.lbg:lbg-gradle-catalog:1.13.0")
+
+        }
+    }
+}
+
+rootProject.name = '__APP_NAME__'

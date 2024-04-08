@@ -1,0 +1,285 @@
+#!groovy
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */
+/* Used for docker/jib image build and tagging */
+library identifier: 'jenkins-sharedlib-bakery-lifecycle@master', retriever: modernSCM([$class: 'GitSCMSource',
+  remote: 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-bakery-lifecycle.git',
+  credentialsId: 'jenkinsPAT'])
+
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */
+  /* Used for Zap scan */
+library identifier: 'jenkins-sharedlib-zap-scan@master', retriever: modernSCM([$class: 'GitSCMSource',
+        remote: 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-zap-scan.git',
+        credentialsId: 'jenkinsPAT'])
+
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */
+/* Used for helm charts deployment */
+library identifier: 'jenkins-sharedlib-helm-charts@master', retriever : modernSCM([$class: 'GitSCMSource',
+ remote : 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-helm-charts.git',
+ credentialsId : 'jenkinsPAT'])
+
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */
+/* Used for trufflehog scan */
+library identifier: 'jenkins-sharedlib-trufflehog@master', retriever: modernSCM([$class: 'GitSCMSource',
+   remote: 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-trufflehog.git',
+   credentialsId: 'jenkinsPAT'])
+
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */
+/* Used for Sonaqube scan */
+library identifier: 'sonarqube@master', retriever: modernSCM([$class: 'GitSCMSource',
+   remote: 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-sonarQube_multi.git',
+   credentialsId: 'jenkinsPAT'])
+
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */ 
+library identifier: 'jenkins-sharedlib-compliance@master', retriever: modernSCM([$class: 'GitSCMSource',
+  remote: 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-compliance.git',
+  credentialsId: 'jenkinsPAT'])
+
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */
+/* Used for release creation for RTL */
+library identifier: 'jenkins-sharedlib-release@master', retriever: modernSCM([$class: 'GitSCMSource',
+    remote: 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-release.git',
+    credentialsId: 'jenkinsPAT'])
+
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */
+/* Used for NexusIq scan */
+library identifier: 'jenkins-sharedlib-nexusiq-multi@master',retriever: modernSCM([$class: 'GitSCMSource',
+  remote: 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-nexusiq-multi.git',
+  credentialsId: 'jenkinsPAT'])
+
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */
+/* Used for liquibase, feature flag and canary charts */
+library identifier: 'jenkins-sharedlib-common@master', retriever: modernSCM([$class: 'GitSCMSource',
+  remote: 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-common.git',
+  credentialsId: 'jenkinsPAT'])
+
+/* the git version/tag used to checkout below library is the latest version of master dated March 23 2022 more details are in readme */
+/* Used for notification of Jenkins build status */
+library identifier: 'jenkins-sharedlib-notifications@master', retriever : modernSCM([$class: 'GitSCMSource',
+  remote : 'https://github.com/lbg-gcp-foundation/jenkins-sharedlib-notifications.git',
+  credentialsId: 'jenkinsPAT'])
+
+//
+// This file(Jenkinsfile_release) is used only the purpose of generating Release tags/artifacts
+//
+
+def withSecretEnv(List<Map> varAndPasswordList, Closure closure) {
+  wrap([$class: 'MaskPasswordsBuildWrapper', varPasswordPairs: varAndPasswordList]) {
+    withEnv(varAndPasswordList.collect { "${it.var}=${it.password}" }) {
+      closure()
+    }
+  }
+}
+
+properties([
+    buildDiscarder(
+        logRotator(
+            artifactDaysToKeepStr: '5',
+            artifactNumToKeepStr: '',
+            daysToKeepStr: '3',
+            numToKeepStr: '5'
+        )
+    ),
+    disableConcurrentBuilds(),
+])
+
+pipeline {
+
+    environment {
+        def environmentName = 'bld'
+		
+        def projectName = '<service-name>'
+        def releaseName = '<release-name>'
+		def istioProjectName = '<istio-release-name>'
+        def istioReleaseName = '<istio-project-name>'
+		
+		def namespace = "<namespace-name>"
+        def version = '<chart-version>'
+		
+		def projectId = "<gcp-project-id>"
+        def workstream = "<workstream>"
+		def registryUrl = "eu.gcr.io"
+		def registryProjectId= "<GCR GCP project id>"
+		def clusterName = '<cluster-name>'
+        def clusterRegion = "europe-west2"
+
+        /* Change it to cloudsql for cloudsql db | default is spanner for a multi region setup*/
+        def LiquibaseDatabase= 'spanner'
+		
+		def icpProjectId = "<gcp-icp-project-id>"
+        def icpClusterName = "<gcp-icp-cluster-name>"
+        def icpClusterRegion = "europe-west2"
+
+        //Backward compatibility check variables
+        def liveSpec = '<path of service spec (OAS) already live'
+        def candidateSpec = '<path of candidate service spec (OAS) to be live'
+
+    }
+
+    options {
+        timestamps()
+        ansiColor('xterm')
+        skipDefaultCheckout()
+    }
+
+    /*Replace label with respective Domain/Tenants name*/
+    agent {
+        kubernetes {
+            label "starter-rel-api-${UUID.randomUUID().toString()}"
+            yamlFile "pipelines/podTemplate.yaml"
+        }
+    }
+
+     stages {
+        stage('Workspace clean and Declarative checkout') {
+            steps {
+                // Cleanup before starting the stage
+                cleanWs()
+                // Checkout the repository
+                checkout scm
+		sh '''
+                awk '{ print $1 }' starter_version.txt >> ../version 
+                '''
+            }
+        }
+         stage('validate Microservice template version with current version') {
+             steps {
+               
+                 starterTemplateValidator()
+	           
+	           }
+         }
+		stage('Environment Setup') {
+            steps {
+                script {
+                    env.GIT_URL = scm.getUserRemoteConfigs()[0].getUrl()
+                    println "GIT URL : " + env.GIT_URL
+                    //def imageProps = readYaml file : "<path to jib yaml>" //jibImage properties
+                    //env.LIVE_BRANCH = imageProps.config.liveBranch //Branch to be deployed/released - default should be master
+		    env.LIVE_BRANCH = "master"
+					// versions to be deployed for helm release
+                    env.SERVICE_VERSION = ""
+                    env.DEPLOYMENT_VERSION = ""
+                    env.CONFIG_VERSION = ""
+                    env.BDD_FAILURE = false
+                    dir('helm-overrides') {
+                        if (fileExists('release-versions.yaml')) {
+                            def props1 = readYaml file: 'release-versions.yaml'
+                            env.SERVICE_VERSION = props1.service.version? '-' + props1.service.version : ""
+                            env.DEPLOYMENT_VERSION = props1.deployment.version? '-' + props1.deployment.version : ""
+                            env.CONFIG_VERSION = props1.config.version? '-' + props1.config.version : ""
+                            println env.SERVICE_VERSION
+                            println env.DEPLOYMENT_VERSION
+                            println env.CONFIG_VERSION
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Initial Check and Scan') {
+            parallel {
+                stage('Run Repo Scan') {
+                    steps {
+                        container('trufflehog') {
+                            singleRepoScan([branchName: env.BRANCH_NAME])
+                        }
+                    }
+                }
+
+                stage('Validate PR Title changelog') {
+                    steps {
+                        validatePR([prTitle: env.CHANGE_TITLE])
+                    }
+                }
+				
+            }
+        }
+
+        stage('Build') {
+                            when {
+                                branch 'master'
+                            }
+                            steps {
+                                container('gradle') {
+                                    echo "*********************** Build Project ***********************************"
+                                    sh 'gradle -Dorg.gradle.internal.checksums.insecure=true clean build -g gradle-user-home'
+
+                                }
+                            }
+        }
+        
+        stage('Release') {
+                when {
+                         branch 'master'
+                }
+                steps {
+                     container('infra-tools') {
+                     echo "============Generate Release Tag============"
+                         simpleReleaseHandler([releaseFileList: [], releaseBranch: "master",jenkinsCredentials: 'jenkinsPAT'])
+                     }
+                }
+        }
+
+	/*stage('Update Starter Version') {
+                when {
+                         branch 'master'
+                }
+                   steps {
+                     container('infra-tools') {
+			         sh '''
+                       git describe --tags --abbrev=0 > latest_tag
+                        '''
+			        script {    
+                        releaseTag = readFile('latest_tag').trim()
+                    }   
+                        println("Release Tag: ${releaseTag}")
+			    // script {
+		            //lastCommitMessage     = sh(script: "git log -1 --pretty=format:'%B'",  returnStdout: true).trim()
+			    //  lastCommitMessage = 'feat: NEB-1202 upd starter ver with Rel'
+			//}
+			 
+			 // println("Commit message: ${lastCommitMessage}")
+
+			 sh("git checkout -B master")
+			 sh("git fetch --all")
+             writeFile file: 'starter_version.txt', text: "${releaseTag}"
+			 sh("git add starter_version.txt")
+			 // sh("git commit -m $lastCommitMessage")
+			 sh '''
+			 
+			  git commit -m "fix: NEB-1202 upd starter ver with Rel"
+                '''
+			 sh "git push -u origin master"
+
+                }
+	    }
+        } */
+	
+	
+        stage ('Generate changelog') {
+            steps {
+                changelogGen([currentBranch: env.BRANCH_NAME])
+            }
+        }
+    }
+    post {
+		failure {
+            script{
+                if(env.LIVE_BRANCH == 'master') {
+                    if (env.BDD_FAILURE == 'true') {
+                        println env.bddFailure
+                        def emailConfig = [:]
+                        emailConfig.subject = "BDD ${currentBuild.currentResult} | ${environmentName} | ${projectName}"
+                        emailConfig.body = "**This is an automated email from Jenkins**\n\n JOB: ${env.JOB_NAME}\n BUILD: ${env.BUILD_NUMBER}\n SERVICE/ARTEFACT NAME: ${projectName}\n ENVIRONMENT: ${environmentName}\n CUCUMBER_REPORT: ${env.BUILD_URL}cucumber-html-reports/overview-features.html\n\n"
+                        emailNotify(emailConfig)
+                    } else {
+                        emailNotify()
+                    }
+                }
+            }
+        }
+        cleanup {
+            cleanWs()
+        }
+    }
+}

@@ -1,0 +1,10 @@
+cmdb_appid: <cmdb_appid>
+
+release:
+  name: <release-name>
+
+service:
+  name: <service-name>
+  type: ClusterIP
+  port: 8080
+  targetPort: 9080

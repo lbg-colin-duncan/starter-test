@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+ <Loggers>
+
+     <!--Reference of below ConsoleAppender resolving in com.lbg:lbg-logging-filter dependency
+     which logs timestamp , hostname ,correlation-id, org-id ,brand-id from context-->
+        <Logger name="__PACKAGE_PREFIX__" level="INFO" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+        </Logger>
+
+        <Root level="error">
+            <AppenderRef ref="ConsoleAppender" />
+        </Root>
+    </Loggers>
+</Configuration>

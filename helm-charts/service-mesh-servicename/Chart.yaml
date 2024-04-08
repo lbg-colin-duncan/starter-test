@@ -1,0 +1,4 @@
+name: service-mesh-customer-service
+version: 1.0.0
+appVersion: 2.0.0
+description: A chart for the customer microservice

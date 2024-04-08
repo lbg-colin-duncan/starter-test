@@ -1,0 +1,1 @@
+Feature files in this directory will be picked by the BDD runner.

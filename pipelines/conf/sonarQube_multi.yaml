@@ -1,0 +1,19 @@
+---
+sonar:
+  sonarQubExecutable: "gradle"
+  sonarServer: "SonarQube"
+  gradlegoals: sonarqube -x test --no-watch-fs
+  preRun: ""
+  javaOptions:
+    -Dsonar.projectKey: "<service-name>"
+    -Dsonar.projectName: "<service-name>"
+    -Dsonar.profile: 'Sonar\ way'
+    -Dsonar.scm.enabled: "true"
+    -Dsonar.language: "kotlin"
+    -Dsonar.findbugs.skip: true
+    -Dsonar.findbugs.disabled: true
+    -Dsonar.sources: "src/main/java"
+    -Dsonar.jacoco.reportPaths: "build/jacoco/sonar.exec"
+    -Dsonar.kotlin.coveragePlugin: "jacoco"
+    -Dsonar.tests: "src/test/java"
+    -Dsonar.log.level: "INFO"

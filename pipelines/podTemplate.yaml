@@ -1,0 +1,170 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+  jenkins: jenkins-pipeline
+spec:
+  serviceAccountName: svc-gke-local-resourcecreator
+  securityContext:
+    runAsUser: 0
+  volumes:
+    - name: dind-storage
+      emptyDir: {}
+  containers:
+    - name: jnlp
+      image: harbor.mgmt-bld.oncp.dev/platform_tools_rtl/jnlp:release_v0.6.0
+      tty: true
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "2024Mi"
+          cpu: "2000m"
+    - name: trufflehog
+      image: harbor.mgmt-bld.oncp.dev/platform_tools_rtl/trufflehog:release_v0.25.0
+      command:
+        - cat
+      tty: true
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "512Mi"
+          cpu: "250m"
+    - name: node
+      image: harbor.mgmt-bld.oncp.dev/staging_base_images/node:14.17.6-alpine3.13
+      tty: true
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "1000Mi"
+          cpu: "1000m"
+    - name: docker
+      image: harbor.mgmt-bld.oncp.dev/platform_tools_rtl/docker-dind-gcloud:release_v3.34.0
+      env:
+        - name: HTTP_PROXY
+          value: "http://ep.threatpulse.net:80"
+        - name: HTTPS_PROXY
+          value: "http://ep.threatpulse.net:80"
+        - name: NO_PROXY
+          value: ".google.internal,.googleapis.com,.gcr.io,.oncp.dev"
+      securityContext:
+        privileged: true
+      volumeMounts:
+        - name: dind-storage
+          mountPath: /var/lib/docker
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "2024Mi"
+          cpu: "2000m"
+    - name: infra-tools
+      image: harbor.mgmt-bld.oncp.dev/platform_tools_rtl/terraform-tools:release_v1.60.0
+      env:
+        - name: http_proxy
+          value: "http://ep.threatpulse.net:80"
+        - name: https_proxy
+          value: "http://ep.threatpulse.net:80"
+        - name: no_proxy
+          value: "10.84.0.242,.google.internal,.googleapis.com,.gcr.io,.oncp.dev"
+      tty: true
+      command:
+        - cat
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "1000Mi"
+          cpu: "1000m"
+    - name: changelog
+      image: harbor.mgmt-bld.oncp.dev/platform_tools_rtl/standard-version:release_v1.33.0
+      env:
+        - name: HTTP_PROXY
+          value: "http://ep.threatpulse.net:80"
+        - name: HTTPS_PROXY
+          value: "http://ep.threatpulse.net:80"
+        - name: NO_PROXY
+          value: ".google.internal,.oncp.dev,eu.gcr.io,10.84.0.178,169.254.169.254,10.84.8.50,10.84.1.66"
+      tty: true
+      command:
+        - cat
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "256Mi"
+          cpu: "256m"
+    - name: gradle
+      image: harbor.mgmt-bld.oncp.dev/mve_tools_rtl/gradle-bdd-base:release_v0.40.0
+      imagePullPolicy: Always
+      command:
+        - cat
+      tty: true
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "2048Mi"
+          cpu: "1000m"
+    - name: gradle-jdk
+      image: harbor.mgmt-bld.oncp.dev/staging_platform_tools/gradle:7.2-jdk11
+      env:
+        - name: HTTP_PROXY
+          value: "http://ep.threatpulse.net:80"
+        - name: HTTPS_PROXY
+          value: "http://ep.threatpulse.net:80"
+        - name: NO_PROXY
+          value: ".google.internal,.oncp.dev,eu.gcr.io,10.84.0.178,169.254.169.254,10.84.8.50,10.84.1.66"
+      imagePullPolicy: Always
+      command:
+        - cat
+      tty: true
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "2048Mi"
+          cpu: "1000m"
+    - name: owasp-zap
+      image: harbor.mgmt-bld.oncp.dev/platform_tools/owasp/zap2docker-stable:2.9.0
+      imagePullPolicy: Always
+      command:
+        - cat
+      tty: true
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "512Mi"
+          cpu: "250m"
+    - name: diffy
+      image: harbor.mgmt-bld.oncp.dev/mve_tools_rtl/openapi-diff:release_v0.5.0
+      env:
+        - name: HTTP_PROXY
+          value: "http://ep.threatpulse.net:80"
+        - name: HTTPS_PROXY
+          value: "http://ep.threatpulse.net:80"
+        - name: NO_PROXY
+          value: ".google.internal,.oncp.dev,eu.gcr.io,10.84.0.178,169.254.169.254,10.84.8.50,10.84.1.66"
+      imagePullPolicy: Always
+      command:
+        - cat
+      tty: true
+      resources:
+        requests:
+          memory: "100Mi"
+          cpu: "100m"
+        limits:
+          memory: "2048Mi"
+          cpu: "1000m"

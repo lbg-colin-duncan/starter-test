@@ -1,0 +1,97 @@
+# Default values for ep-customer-service.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 3
+projectId: <projectId to deploy>
+cmdb_appid: <cmdb_appid>
+
+image:
+  repository: <gcr path to image>
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: <fullnameOverride>
+namespace: <namespace>
+
+release:
+  name: <release-name>
+
+hpa:
+  enbaled: true
+
+#  enable liveness/ readiness probes in bld config yaml and override required values from below
+probes:
+  livenessEnabled: true
+  readinessEnabled: true
+  livenessProbe:
+    failureThreshold: 6
+    httpGet:
+      path: /<service-name>/v2.0/health
+      port: 9080
+      scheme: HTTP
+    initialDelaySeconds: 120
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+  readinessProbe:
+    failureThreshold: 6
+    httpGet:
+      path: /<service-name>/v2.0/health
+      port: 9080
+      scheme: HTTP
+    initialDelaySeconds: 90
+    periodSeconds: 10
+    successThreshold: 1
+    timeoutSeconds: 1
+
+serviceAccount:
+  svc: "svc-<service-account>"
+  name: "sa-<service-account>"
+  automountServiceAccountToken: false
+
+service:
+  type: ClusterIP
+  port: 8080
+  targetPort: 9080
+  commonEnvVars:
+    - name: brand.codes
+      value: IF,LYDS,HFX,BOS,SJPB
+    - name: '<service>.service.locate.endpoint'
+      value: '<>'
+    - name: '<service>.service.locate.headers'
+      value: 'Authorization,x-lbg-brand,x-lbg-txn-correlation-id,X-Log-Level,x-lbg-org'
+  extraEnvVars:
+    - name: <service>-service-host
+      value: "http://<k8s service>.ns-kcl-eplus-cus-customer.svc.cluster.local:8080"
+  endpoints:
+    readiness: /<service>/v1.0/health
+    liveness: /<service>/v1.0/health
+
+roleBinding:
+  roleRefName: psp:permissive
+
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+#   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+dnsConfig:
+  options:
+    - name: ndots
+      value: "1"
+

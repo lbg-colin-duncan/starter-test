@@ -1,0 +1,278 @@
+/*
+ This is gradle build file for the project starter-springboot-template
+*/
+plugins {
+    id "java"
+    id "maven-publish"
+    id "jacoco"
+    alias(libs.plugins.plugin.gcloud.jib)
+//    alias(libs.plugins.plugin.sphinx.gradle)
+    alias(libs.plugins.plugin.springframework.boot)
+    alias(libs.plugins.plugin.gradle.git.properties)
+    alias(libs.plugins.plugin.spring.dependencymgmt)
+    alias(libs.plugins.plugin.openapi.gen)
+    alias(libs.plugins.plugin.sonarqube)
+    alias(libs.plugins.plugin.freeair.lombok)
+    alias(libs.plugins.plugin.kotlin.jvm)
+    id "kr.motd.sphinx" version "2.10.1"
+
+}
+apply plugin: 'base'
+
+springBoot {
+    buildInfo()
+}
+
+
+jib {
+    // specify the name of docker image to be built
+    to.image = "<service-name> or <app-name>"
+    // specify the exact base image to be used.
+    //eg: harbor.mgmt-bld.oncp.dev/mve_tools_rtl/sbs-java-wss-distroless:release_v0.8.0
+    from.image = "<key your base image>"
+    container.user = 1000
+}
+
+configurations {
+    cucumberRuntime.extendsFrom testRuntime
+}
+
+configurations {
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+repositories {
+    maven {
+        url = "https://nexus.mgmt-bld.oncp.dev/repository/maven-public/"
+    }
+    maven {
+        url = "https://nexus.sbs-bld.oncp.dev/repository/shared-services/"
+    }
+}
+
+
+def lombok_version = '1.18.12'
+
+dependencies {
+
+    /*
+      gradle dependency for the custom logging filter.
+    */
+    implementation libs.lbg.logging.filter
+
+    /*
+      gradle dependency for the flogger api.
+    */
+    implementation(libs.flogger)
+    implementation(libs.floggersystem)
+    implementation(libs.floggerslf4j)
+    /*
+      gradle dependency for the spring.
+    */
+    implementation libs.bundles.spring.libs
+    implementation(libs.h2db)
+
+    /*
+      gradle dependency for the micrometer.
+    */
+    implementation(libs.micrometer.core)
+    implementation(libs.micrometer.registry.prometheus)
+    implementation(libs.micrometer.registry.stackdriver)
+
+    /*
+      gradle dependency for the lombok.
+    */
+    implementation "org.projectlombok:lombok:${lombok_version}"
+    /*
+       gradle dependency for the swagger2.
+     */
+    implementation(libs.springfox.swagger2)
+    implementation(libs.springfox.swagger.ui)
+    implementation 'org.springdoc:springdoc-openapi-ui:1.6.14'
+    /*
+       gradle dependency for the jackson.
+     */
+    implementation(libs.jackson.databind)
+    implementation(libs.jackson.core)
+    implementation(libs.jackson.datatype.jsr)
+
+    /*
+        gradle dependency for jwt
+     */
+    implementation(libs.jjwt)
+    implementation "com.lbg:jwt-validate-starter:1.0.12"
+    implementation "com.auth0:java-jwt:3.18.3"
+
+    implementation(libs.modelmapper)
+    /*
+       gradle dependency of audit log lbg specific library
+     */
+    implementation(libs.lbg.audit.lib)
+    /*
+       gradle dependency for google cloud.
+     */
+    implementation(libs.google.cloud.libraries.bom)
+    implementation 'com.google.cloud:google-cloud-core:2.12.0'
+
+    /*Spring Boot strater for Secret Manager*/
+    implementation("com.google.cloud:spring-cloud-gcp-starter-secretmanager:3.3.0")
+
+    /*
+       gradle dependency for the cucumber.
+     */
+    testImplementation(libs.cucumber.java8)
+    testImplementation(libs.cucumber.junit)
+    testImplementation(libs.cucumber.spring)
+    testImplementation(libs.maven.cucumber.reporting)
+
+    /*
+       gradle dependency for the rest-assured.
+     */
+    testImplementation(libs.cucumber.json)
+    testImplementation(libs.rest.bdd)
+
+    /*
+       gradle dependency for the junit-5 and mockito-api
+     */
+    testImplementation libs.bundles.unittest.libs
+
+    // excluding junit-4 from spring-boot
+    testImplementation('org.springframework.boot:spring-boot-starter-test'){
+        exclude group: 'junit', module: 'junit'
+    }
+	annotationProcessor "org.projectlombok:lombok:${lombok_version}"
+}
+
+
+configurations.all {
+
+    exclude module: "spring-boot-starter-logging"
+    exclude module: "logback-classic"
+
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.group == 'org.apache.logging.log4j') {
+            details.useVersion '2.17.1'
+        }
+    }
+}
+
+group = "__PACKAGE_PREFIX__"
+version = "1.0.0"
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from(components.java)
+        }
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+//    dependsOn openApiGenerate
+}
+
+sphinx {
+    sourceDirectory = "${projectDir}/documentation/source"
+    outputDirectory = "${projectDir}/documentation/target"
+}
+
+sonarqube {
+    properties {
+        property "sonar.sourceEncoding", "UTF-8"
+        property "sonar.exclusions", "**/package-name1/**, **/package-name2/**, **/ClassName1.java, **/ClassName2.java"
+        property "sonar.jacoco.reportPath", "$projectDir/build/reports/jacoco/test"
+        property "sonar.junit.reportsPath", "$projectDir/build/test-results/test"
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
+}
+
+
+test {
+    useJUnitPlatform {
+        options.includeTags("unittest")
+    }
+
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
+
+    afterSuite { desc, result ->
+        if (!desc.parent) {
+            println "\nTest result: ${result.resultType}"
+            println "Test summary: ${result.testCount} tests, " +
+                    "${result.successfulTestCount} succeeded, " +
+                    "${result.failedTestCount} failed, " +
+                    "${result.skippedTestCount} skipped"
+        }
+    }
+    finalizedBy jacocoTestReport // report is always generated after tests run
+}
+
+task componentTest(type: Test){
+
+    useJUnitPlatform {
+        options.includeTags("component")
+    }
+
+    testLogging {
+        events 'PASSED', 'FAILED', 'SKIPPED'
+    }
+
+    afterSuite { desc, result ->
+        if (!desc.parent) {
+            println "\nTest result: ${result.resultType}"
+            println "Test summary: ${result.testCount} tests, " +
+                    "${result.successfulTestCount} succeeded, " +
+                    "${result.failedTestCount} failed, " +
+                    "${result.skippedTestCount} skipped"
+        }
+    }
+}
+
+task cucumber(type: Test) {
+    dependsOn assemble, compileTestJava, processTestResources
+    doLast {
+        javaexec {
+            main = "cucumber.api.cli.Main"
+            classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+            args = ['--plugin', 'pretty', '--plugin', 'json:target/cucumber.json', '--tags', '@Regression', '--glue', 'stepDef', 'src/test/resources/features']
+
+        }
+    }
+}
+
+jacocoTestReport {
+    dependsOn test // tests are required to run before generating the report
+    reports {
+        html.getRequired().set(true)
+        xml.getRequired().set(true)
+        csv.getRequired().set(false)
+    }
+}
+
+openApiGenerate {
+
+    generatorName = "spring"
+    inputSpec = "$rootDir/specs/api-specs.yaml".toString() // specify the API specs
+    outputDir = "$buildDir/generated".toString()
+    modelPackage = "__PACKAGE_PREFIX__.request"
+    configOptions = [
+            dateLibrary: 'java8',
+            interfaceOnly: 'true',
+            skipDefaultInterface: 'true',
+            useApiIgnore:'fales',
+            swaggerAnnotations: 'true',
+    ]
+    systemProperties = [
+            models: "Error"
+    ]
+}

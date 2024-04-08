@@ -1,0 +1,14 @@
+{{- if .Values.destinationrule.enabled -}}
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: {{ include "destinationrule.name" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  host: {{ .Values.destinationrule.host }}
+  trafficPolicy:
+    tls:
+      mode: {{ .Values.destinationrule.mode }}
+  subsets:
+{{ toYaml .Values.drsubsets | indent 4 }}
+{{- end }}

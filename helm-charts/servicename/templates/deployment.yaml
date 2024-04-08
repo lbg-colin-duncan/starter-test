@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "api.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "api.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+{{ include "api.matchlabels" . | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "api.matchlabels" . | indent 8 }}
+    spec:
+      automountServiceAccountToken: {{ .Values.serviceAccount.automountServiceAccountToken }}
+      serviceAccountName: {{ include "serviceaccount.name" . }}
+      {{- with .Values.securityContext }}
+      securityContext:
+{{ toYaml . | indent 12 }}
+     {{- end }}
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if or (.Values.service.commonEnvVars) (.Values.service.extraEnvVars) }}
+          env:
+            {{- if (.Values.service.commonEnvVars) }}
+{{ toYaml .Values.service.commonEnvVars | indent 12 }}
+            {{- end }}
+            {{- if (.Values.service.extraEnvVars) }}
+{{ toYaml .Values.service.extraEnvVars | indent 12 }}
+            {{- end }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          {{- if (.Values.probes.livenessEnabled) }}
+          {{- with .Values.probes.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          {{- if (.Values.probes.readinessEnabled) }}
+          {{- with .Values.probes.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - {key: app.kubernetes.io/name, operator: In, values: [{{ include "api.kname" . }}]}
+                {{- if .Values.deployment.version }}
+                - {key: version, operator: In, values: [{{ .Values.deployment.version }}]}
+                {{- end }}
+              topologyKey: "kubernetes.io/hostname"
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

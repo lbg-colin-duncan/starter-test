@@ -1,0 +1,5 @@
+service:
+  name: <service-name>
+  type: ClusterIP
+  port: 8080
+  targetport: 9080

@@ -1,0 +1,10 @@
+---
+nexusiq:
+  application: "<app-name>"
+  credsId: "NexusIQ"
+  scanPattern: "*"
+  iqServer: "https://nexusiq.mgmt-bld.oncp.dev"
+  proxy: "http://ep.threatpulse.net:80"
+  organisationId: "eplus"
+  nexusIQJar: "https://nexus.mgmt-bld.oncp.dev/repository/binaries/nexusiq/nexus-iq-cli-1.88.0-02.jar"
+  releaseBranch: master

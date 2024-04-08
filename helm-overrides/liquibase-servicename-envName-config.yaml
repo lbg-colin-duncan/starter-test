@@ -1,0 +1,39 @@
+resources:
+  requests:
+    memory: "300m"
+    cpu: "300m"
+  limits:
+    memory: "300Mi"
+    cpu: "300m"
+
+image:
+  repository: eu.gcr.io/sbs-ctl-bld-01-54a6/mve_tools/liquibase-cloudsql
+  tag: v0.0.1
+  pullPolicy: Always
+
+roleBinding:
+  name: <rolebinding>
+  roleRefName: psp:permissive
+
+namespace: <namespace_name>
+fullnameOverride: liquibase-<service-name>
+
+serviceAccount:
+  name: <spanner-service-account>
+  automountServiceAccountToken: false
+  emailId: <emailId>
+  deployedFlag: <false or true>-- if you are deploying this service account under your helm chart keep this value as false  otehrwise true.
+
+service:
+  name: <your-ms-name>
+
+database:
+  name: <your-db-name>
+
+containerArguments:
+  command: update
+  url: <database url in spanner instance>
+  labels: base
+  tag: <service-name>-<tag>  NOTE: '-'(hyphen) is mandatory. Tag should be in increading order.Service name can be the miscroservice name.Increase the tag with every run of liquibase else it will not appyly new changesets.
+  applyRollback: false
+  changeLogSync: false

@@ -1,0 +1,8 @@
+roleBinding:
+  name: psp:permissive-rlb-bld-<service>
+  roleRefName: psp:permissive
+
+serviceAccount:
+  name: 'sa-<service>-ms-user'
+  automountServiceAccountToken: 'false'
+  emailId: 'svc-<service>@<projectId>.iam.gserviceaccount.com'

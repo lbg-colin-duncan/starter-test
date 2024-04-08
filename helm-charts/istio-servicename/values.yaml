@@ -1,0 +1,43 @@
+nameOverride: ""
+fullnameOverride: ""
+resourceBaseName: ""
+namespace: <namespace to deploy>
+
+virtualservice:
+  enabled: true
+  name: vs-<dmn/tnt>-<service-name>-v2
+  gateways: istio-system/<dmn01/tnt01/alike>-istio-ingress-gw
+  #hosts: api.ew2.bld-02.ep.gcp.oncp.cloud
+  hosts: <host gateway>
+
+candidatevirtualservice:
+  #hosts: customer-service-v2.ns-kcl-eplus-cus-customer.svc.cluster.local
+  hosts: <hostname for candidate service>
+
+destinationrule:
+  enabled: <true/false>
+  name: dr-<dmn/tnt/alike>-<service-name>
+  host: <hostname for candidate service>
+  mode: ISTIO_MUTUAL
+
+virtualserviceIlb:
+  enabled: false
+  gateways: <ILB gateway>
+  #hosts: icp-ilbgw.eplus-bld-02.oncp.dev
+   hosts: <icp ilb gateway>
+
+retry:
+  host: <k8s sevice>.<namespace>.svc.cluster.local
+  enabled: false
+  attempts: 3
+  perTryTimeout: 30s
+  retryOn: connect-failure,retriable-status-codes,reset,gateway-error
+
+circuit:
+  enabled: false
+  name: <circut breaker name>
+  serviceName: <k8s sevice>.<namespace>.svc.cluster.local
+  consecutiveErrors: 3
+  interval: 10s
+  baseEjectionTime: 20s
+  maxEjectionPercent: 80

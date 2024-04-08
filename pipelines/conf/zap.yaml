@@ -1,0 +1,13 @@
+---
+zapConfig:
+  appUrl: "__APP_URL__"
+  contextName: "/*/*"
+  includeUrls: "/*"
+  excludeUrls: ""
+  ajaxSpider: "False"
+  spider: "True"
+  proxyUrl: "http://localhost:8080"
+  reportPath: "target/report"
+  reportType: "html,xml"
+  zapProxyCMD: "/zap/zap-x.sh -host 0.0.0.0 -port 8080 -config api.addrs.addr.name=.* -config api.addrs.addr.regex=true -config api.disablekey=true -config connection.timeoutInSecs=60"
+ # proxyChain: "https://ep.threatpulse.net:80"

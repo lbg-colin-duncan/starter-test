@@ -1,0 +1,12 @@
+config:
+  gcrProjectID: '<gcp-projectID>'
+  registryUrl: 'eu.gcr.io'
+  registryProject: '<gcp-projectID>'
+  registryCreds: 'jenkinsPAT'
+  aquaURL: 'https://aqua.mgmt-bld.oncp.dev'
+  proxy_host: "http://ep.threatpulse.net:80"
+  aquaSecImage: 'harbor.mgmt-bld.oncp.dev/platform_tools/aqua/scanner:5.0.20216'
+  liveBranch: 'master'
+image:
+  dockerImage: <registry_folder>/<image-name>
+  scanGating: high

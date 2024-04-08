@@ -1,0 +1,7 @@
+serviceAccount:
+  name: <serviceAccount>
+  emailId: <serviceAccount>@<gcp-project-id>.iam.gserviceaccount.com
+  automountServiceAccountToken: false
+
+roleBinding:
+  roleRefName: psp:permissive

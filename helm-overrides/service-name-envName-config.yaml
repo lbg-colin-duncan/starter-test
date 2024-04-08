@@ -1,0 +1,37 @@
+namespace: <kcl namespace name>
+
+image:
+  repository: <GCR repo name>
+  tag: latest
+  pullPolicy: Always
+
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "4000m"
+  limits:
+    memory: "4Gi"
+    cpu: "4000m"
+
+securityContext:
+  runAsUser: 18500
+  runAsGroup: 18500
+  fsGroup: 18500
+
+service:
+  extraEnvVars:
+    - name: '<property name>'
+      value: '<value specific to env>'
+
+serviceAccount:
+  enabled: false
+  name: 'sa-<service>-ms-user'
+  automountServiceAccountToken: 'false'
+  emailId: 'svc-<service>-ms-user@<gcp-projectid>.iam.gserviceaccount.com'
+
+hpa:
+  enabled: false
+# comment to enable probes and override required values from values.yaml
+probes:
+  livenessEnabled: false
+  readinessEnabled: false

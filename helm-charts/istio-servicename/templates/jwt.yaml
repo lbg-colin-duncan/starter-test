@@ -1,0 +1,45 @@
+{{- if .Values.jwt_validation.apply }}
+apiVersion: "security.istio.io/v1beta1"
+kind: "RequestAuthentication"
+metadata:
+  name: {{ include "requestauth.name" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      {{- range $matcher :=  .Values.jwt_validation.matcher }}
+      {{ $matcher.label }}
+      {{- end }}
+  jwtRules:
+  - issuer: "{{ .Values.jwt_validation.iss }}"
+    jwksUri: "{{ .Values.jwt_validation.jwksUri }}"
+    forwardOriginalToken: true
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: {{ include "authpolicy.name" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      {{- range $matcher :=  .Values.jwt_validation.matcher }}
+      {{ $matcher.label }}
+      {{- end }}
+  action: DENY
+  rules:
+  - from:
+    - source:
+        notRequestPrincipals:
+        - "*"
+    to:
+    - operation:
+        notPaths:
+        {{- if .Values.jwt_validation.allow_all }}
+        - "*"
+        {{- else }}
+          {{- range $urls := .Values.jwt_validation.exclude_urls }}
+        - {{ $urls.path }}
+          {{- end }}
+        {{- end }}
+{{- end -}}

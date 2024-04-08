@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+    <Properties>
+        <Property name="LOG_PATTERN">
+            %d{ISO8601} %5p ${hostName} --- [%15.15t] [cid=%X{correlation-id}] [brand=%X{brand}] %-40.40c{1.} : %m%n%ex
+        </Property>
+        <property name="LOGS_DIR" value="logs" />
+    </Properties>
+    <Appenders>
+        <Console name="ConsoleAppender" target="SYSTEM_OUT" follow="true">
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+        </Console>
+        <RollingFile name="FileAppender" fileName="${LOGS_DIR}/__APP_NAME__.log"
+                     filePattern="${LOGS_DIR}/__APP_NAME__-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout>
+                <Pattern>${LOG_PATTERN}</Pattern>
+            </PatternLayout>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10MB" />
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+    </Appenders>
+    <DynamicThresholdFilter key="X-Log-Level" onMatch="ACCEPT" onMismatch="NEUTRAL" defaultThreshold="ERROR">
+        <KeyValuePair key="TRACE" value="TRACE"/>
+        <KeyValuePair key="DEBUG" value="DEBUG"/>
+        <KeyValuePair key="INFO" value="INFO"/>
+        <KeyValuePair key="ERROR" value="ERROR"/>
+        <KeyValuePair key="WARN" value="WARN"/>
+    </DynamicThresholdFilter>
+    <Loggers>
+        <Logger name="__PACKAGE_PREFIX__" level="error" additivity="false">
+            <AppenderRef ref="ConsoleAppender" />
+        </Logger>
+
+        <Root level="error">
+            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="FileAppender"/>
+        </Root>
+    </Loggers>
+</Configuration>
